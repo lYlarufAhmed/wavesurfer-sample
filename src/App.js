@@ -1,28 +1,14 @@
-import {useCallback, useRef} from 'react'
+import {useCallback,useEffect, useRef, useState} from 'react'
 import './App.css';
 import {WaveSurfer, WaveForm} from "wavesurfer-react";
 import {useReactMediaRecorder} from 'react-media-recorder'
 
-function App() {
-  // let url = 'https://www.mfiles.co.uk/mp3-downloads/gs-cd-track2.mp3'
+
+function Track({mediaBlobUrl, index}){
   const wavesurferRef = useRef()
-  // let [recording, setRecording] = useState(false)
-  // let [requireStop, setrequireStop] = useState(false)
-  const {
-      status,
-      startRecording,
-      stopRecording,
-      mediaBlobUrl,
-    } = useReactMediaRecorder({ audio: true });
   const play = useCallback(() => {
-          wavesurferRef.current.playPause();
-      }, []);
-  const handleToggleRecoring = () => {
-     if (status === 'recording')
-      stopRecording()
-     else
-      startRecording()
-   }
+            wavesurferRef.current.playPause();
+        }, []);
   const handleWSMount = useCallback(
           (waveSurfer) => {
               wavesurferRef.current = waveSurfer;
@@ -52,13 +38,12 @@ function App() {
           [mediaBlobUrl]
       );
   return (
-    <div className="App">
-      {
-        mediaBlobUrl && <>
+    <>
+    <h1>Track {index+1}</h1>
         <h2>Wavesurfer component</h2>
      <WaveSurfer onMount={handleWSMount}>
                         <WaveForm waveColor={'f4f2f2'} cursorColor={'#00000000'} progressColor={'#EA1073'} height={50}
-                                  id={`waveform`} fillParent={false} responsive={true}
+                                  id={`waveform-${index}`} fillParent={false} responsive={true}
                             //   pixelRatio={1}
                             backend={'MediaElement'}
                                   barHeight={3}
@@ -72,14 +57,54 @@ function App() {
       <audio controls>
         <source src={mediaBlobUrl}/>
       </audio>
+      <hr/>
         </>
+  )
+}
 
-      }
+function App() {
+  // let url = 'https://www.mfiles.co.uk/mp3-downloads/gs-cd-track2.mp3'
+  // let [recording, setRecording] = useState(false)
+  let [tracks, setTracks] = useState([])
+  // let [requireStop, setrequireStop] = useState(false)
+  const {
+      status,
+      startRecording,
+      stopRecording,
+      mediaBlobUrl,
+    } = useReactMediaRecorder({ audio: true });
+  useEffect(()=>{
+    if (mediaBlobUrl) 
+      setTracks(prev=>{
+      if (!prev.includes(mediaBlobUrl))
+        prev.push(mediaBlobUrl)
+          return prev.slice()
+        })
+  }, [mediaBlobUrl]) 
+  // const play = useCallback(() => {
+  //         wavesurferRef.current.playPause();
+  //     }, []);
+  const handleToggleRecoring = () => {
+     if (status === 'recording')
+     {
+      stopRecording()
+      
+
+     }
+     else
+      startRecording()
+   }
+
+  return (
+    <div className="App">
       <p>{status}</p>
       <button onClick={handleToggleRecoring}>
         {status === 'recording' ? 'Stop':'Record'}
       </button>
-
+      {
+        tracks.length > 0 && tracks.map(( url, index)=><Track key={url} mediaBlobUrl={url} index={index}/>) 
+        // tracks.length > 0 && tracks.map(url=><div>{url}</div>) 
+      }
     </div>
   );
 }
