@@ -1,110 +1,69 @@
-import {useCallback,useEffect, useRef, useState} from 'react'
-import './App.css';
-import {WaveSurfer, WaveForm} from "wavesurfer-react";
-import {useReactMediaRecorder} from 'react-media-recorder'
-
-
-function Track({mediaBlobUrl, index}){
-  const wavesurferRef = useRef()
-  const play = useCallback(() => {
-            wavesurferRef.current.playPause();
-        }, []);
-  const handleWSMount = useCallback(
-          (waveSurfer) => {
-              wavesurferRef.current = waveSurfer;
-              if (wavesurferRef.current) {
-                  wavesurferRef.current.load(mediaBlobUrl);
-
-
-                  wavesurferRef.current.on("ready", () => {
-                      console.log("WaveSurfer is ready");
-                  });
-
-                  wavesurferRef.current.on('finish', () => {
-                      console.log('track End')
-                  })
-
-
-                  wavesurferRef.current.on("loading", data => {
-                      console.log("loading --> ", data);
-                  });
-
-
-                  if (window) {
-                      window.surferidze = wavesurferRef.current;
-                  }
-              }
-          },
-          [mediaBlobUrl]
-      );
-  return (
-    <>
-    <h1>Track {index+1}</h1>
-        <h2>Wavesurfer component</h2>
-     <WaveSurfer onMount={handleWSMount}>
-                        <WaveForm waveColor={'f4f2f2'} cursorColor={'#00000000'} progressColor={'#EA1073'} height={50}
-                                  id={`waveform-${index}`} fillParent={false} responsive={true}
-                            //   pixelRatio={1}
-                            backend={'MediaElement'}
-                                  barHeight={3}
-                        >
-                        </WaveForm>
-                    </WaveSurfer>
-      <button onClick={play}>play/pause</button>
-      <h2>
-        Html audio component
-      </h2>
-      <audio controls>
-        <source src={mediaBlobUrl}/>
-      </audio>
-      <hr/>
-        </>
-  )
-}
-
+import {
+  // useCallback,
+  useEffect,
+  // , useRef
+  useState,
+} from "react";
+import "./App.css";
+import { useReactMediaRecorder } from "react-media-recorder";
+import Track from "./Track";
+const formattedDateTime = () => {
+  let currentDateObj = new Date();
+  return `${currentDateObj.getMonth()}-${currentDateObj.getDate()}-${currentDateObj.getFullYear()}_${currentDateObj
+    .getHours()
+    .toString()
+    .padStart(2, "0")}:${currentDateObj
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}`;
+};
 function App() {
-  // let url = 'https://www.mfiles.co.uk/mp3-downloads/gs-cd-track2.mp3'
-  // let [recording, setRecording] = useState(false)
-  let [tracks, setTracks] = useState([])
-  // let [requireStop, setrequireStop] = useState(false)
-  const {
-      status,
-      startRecording,
-      stopRecording,
-      mediaBlobUrl,
-    } = useReactMediaRecorder({ audio: true });
-  useEffect(()=>{
-    if (mediaBlobUrl) 
-      setTracks(prev=>{
-      if (!prev.includes(mediaBlobUrl))
-        prev.push(mediaBlobUrl)
-          return prev.slice()
-        })
-  }, [mediaBlobUrl]) 
-  // const play = useCallback(() => {
-  //         wavesurferRef.current.playPause();
-  //     }, []);
+  let [tracks, setTracks] = useState(new Map());
+  const [recordingName, setRecordingName] = useState();
+  const { status, startRecording, stopRecording, mediaBlobUrl } =
+    useReactMediaRecorder({ audio: true });
+  useEffect(() => {
+    if (mediaBlobUrl)
+      setTracks((prev) => {
+        if (!prev.has(mediaBlobUrl))
+          prev.set(mediaBlobUrl, { title: recordingName });
+        return new Map([...prev.entries()]);
+      });
+  }, [mediaBlobUrl, recordingName]);
+  const deleteTrack = (url) => {
+    setTracks((prevState) => {
+      prevState.delete(url);
+      return JSON.parse(JSON.stringify(prevState));
+    });
+  };
   const handleToggleRecoring = () => {
-     if (status === 'recording')
-     {
-      stopRecording()
-      
-
-     }
-     else
-      startRecording()
-   }
+    if (status === "recording") {
+      stopRecording();
+    } else {
+      startRecording();
+      setRecordingName(
+        // `New_Idea_${Object.entries(tracks).length + 1}_${formattedDateTime()}`
+        `New_Idea_${tracks.size + 1}_${formattedDateTime()}`
+      );
+    }
+  };
 
   return (
     <div className="App">
       <p>{status}</p>
       <button onClick={handleToggleRecoring}>
-        {status === 'recording' ? 'Stop':'Record'}
+        {status === "recording" ? "Stop" : "Record"}
       </button>
-      {
-        tracks.length > 0 && tracks.map(( url, index)=><Track key={url} mediaBlobUrl={url} index={index}/>) 
-        // tracks.length > 0 && tracks.map(url=><div>{url}</div>) 
-      }
+      {tracks.size > 0 &&
+        [...tracks.entries()].map(([url, { title }], index) => (
+          <Track
+            key={url}
+            url={url}
+            count={index}
+            title={title}
+            handleDelete={() => deleteTrack(url)}
+          />
+        ))}
     </div>
   );
 }
