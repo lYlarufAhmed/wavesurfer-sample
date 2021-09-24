@@ -22,6 +22,7 @@ function App() {
   let [tracks, setTracks] = useState(new Map());
   const [recordingName, setRecordingName] = useState();
   const [pause, setPause] = useState(false);
+  const [recording, setRecording] = useState(false);
   const {
     status,
     startRecording,
@@ -50,10 +51,12 @@ function App() {
   const handleToggleRecoring = () => {
     switch (status) {
       case "recording":
+        setRecording(false);
         stopRecording();
         break;
       case "idle":
       case "stopped":
+        setRecording(true);
         startRecording();
         setRecordingName(
           // `New_Idea_${Object.entries(tracks).length + 1}_${formattedDateTime()}`
@@ -74,9 +77,9 @@ function App() {
     // }
   };
 
-  const handleToggleRecordingPause = () => {
-    if (pause) resumeRecording();
-    else pauseRecording();
+  const handleToggleRecordingPause = async () => {
+    if (pause) await resumeRecording();
+    else await pauseRecording();
 
     setPause((prev) => !prev);
   };
@@ -84,7 +87,9 @@ function App() {
   return (
     <div className="App">
       <p>{status}</p>
-      {status === "recording" && <Visualizer pause={pause} status={status} />}
+      {status === "recording" && (
+        <Visualizer pause={pause} status={status} recording={recording} />
+      )}
       <button onClick={handleToggleRecoring}>
         {status === "recording" ? "Stop" : "Record"}
       </button>

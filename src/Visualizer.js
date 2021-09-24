@@ -1,8 +1,8 @@
 import { useCallback, useRef, useEffect, useMemo, useState } from "react";
-import MicrophonePlugin from "wavesurfer.js/src/plugin/microphone";
 import { WaveSurfer, WaveForm } from "wavesurfer-react";
+import MicrophonePlugin from "wavesurfer.js/src/plugin/microphone";
 
-export default function Visualizer({ pause, status }) {
+export default function Visualizer({ pause, status, recording }) {
   let [resumeRequired, setResumeRequired] = useState(false);
   const wavesurferRef = useRef();
   const plugins = useMemo(() => {
@@ -23,41 +23,36 @@ export default function Visualizer({ pause, status }) {
   }, []);
 
   useEffect(() => {
-    if (resumeRequired) wavesurferRef.current.microphone.play();
-
-    if (pause) wavesurferRef.current.microphone.pause();
-
-    setResumeRequired((prev) => !prev);
-  }, [pause, resumeRequired]);
-
+    recording
+      ? wavesurferRef.current.microphone.start()
+      : wavesurferRef.current.microphone.stop();
+  }, [recording]);
   useEffect(() => {
-    // if (status === "recording") wavesurferRef.current.microphone.play();
-    switch (status) {
-      case "recording":
-        wavesurferRef.current.microphone.start();
-        break;
-      case "stopped":
-        wavesurferRef.current.microphone.stop();
-        break;
-      default:
-        break;
+    if (pause) {
+      wavesurferRef.current.microphone.pause();
+      setResumeRequired(true);
+    } else {
+      if (resumeRequired) {
+        wavesurferRef.current.microphone.play();
+        setResumeRequired(false);
+      }
     }
-  }, [status]);
-
+  }, [pause, resumeRequired]);
   return (
-    <WaveSurfer plugins={plugins} onMount={handleWSMount}>
-      <WaveForm
-        cursorColor={"#00000000"}
-        height={100}
-        barGap={2}
-        barWidth={3}
-        id="rec-waveform"
-        fillParent={true}
-        responsive={true}
-        barMinHeight={1}
-        barHeight={30}
-        backend={"MediaElement"}
-      ></WaveForm>
-    </WaveSurfer>
+    <div style={{ width: "100%" }}>
+      <WaveSurfer plugins={plugins} onMount={handleWSMount}>
+        <WaveForm
+          cursorColor={"#00000000"}
+          height={100}
+          barGap={2}
+          barWidth={3}
+          id="rec-waveform"
+          fillParent={true}
+          responsive={true}
+          barMinHeight={1}
+          barHeight={30}
+        ></WaveForm>
+      </WaveSurfer>
+    </div>
   );
 }
